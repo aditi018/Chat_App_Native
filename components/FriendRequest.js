@@ -4,11 +4,12 @@ import { UserType } from '../UserContext'
 import { useNavigation } from '@react-navigation/native';
 
 const FriendRequest = ({item, friendRequests, setFriendRequests}) => {
+    // console.log(item._id);
 
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
 
-    const acceptRequest = async({friendRequestId}) =>{
+    const acceptRequest = async(friendRequestId) =>{
         try{
             const response = await fetch("http://192.168.30.231:8000/friend-request/accept",{
                 method : "POST",

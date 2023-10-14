@@ -188,6 +188,25 @@ app.post("/friend-request/accept",async(req,res) => {
     }
 })
 
+//access all the friends of the logged in user
+app.get("/accepted-friends/:userId",async(req,res)=>{
+    try{
+        const { userId} = req.params;
+        const user = await User.findById(userId).populate("friends","name email image");
+
+        const acceptedFriends = user.friends;
+
+        res.status(200).json(acceptedFriends);
+
+
+    }catch(err){
+        console.log(err);
+        res.status(500),json({
+            message : "Internal Server Error",
+        })
+    }
+})
+
 
 mongoose.connect("mongodb+srv://aryanpandey0715:Arti1971@cluster0.1krqlwz.mongodb.net/",{
     useNewUrlParser : true,
