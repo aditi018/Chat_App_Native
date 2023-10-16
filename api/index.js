@@ -309,6 +309,45 @@ app.post("/deleteMessages",async(req,res) => {
     }
 })
 
+app.get("/friend-requests/sent/:userId",async(req,res) => {
+    try{
+        const { userId } = req.params;
+        const user = await User.findById(userId).populate("sentFriendRequests", " name email image").lean();
+
+        const sentFriendRequests = user.sentFriendRequests;
+
+        res.status(200).json(sentFriendRequests);
+    }catch(err){
+        console.log("Error : ",err);
+        res.status(500).json({
+            message : "Internal server error"
+        })
+    }
+})
+
+app.get("/friends/:userId",async(req,res) => {
+    try{
+        const { userId} = req.params;
+
+        User.findById(userId).populate("friends").then((user) => {
+            if(!user){
+                return res.status(404).json({
+                    message : "User not found"
+                })
+            }
+
+            const friendIds = user.friends.map((friend) => friend._id)
+
+            res.status(200).json(friendIds);
+        })
+    }catch(err){
+        console.log(err);
+        res.status(500).json({
+            message : "Internal server error"
+        })
+    }
+})
+
 mongoose.connect("mongodb+srv://aryanpandey0715:Arti1971@cluster0.1krqlwz.mongodb.net/",{
     useNewUrlParser : true,
     useUnifiedTopology : true,

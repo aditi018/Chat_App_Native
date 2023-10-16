@@ -8,7 +8,7 @@ import {
   Pressable,
   Image,
 } from "react-native";
-import React, { useContext, useLayoutEffect, useState, useEffect } from "react";
+import React, { useContext, useLayoutEffect, useState, useEffect, useRef } from "react";
 import EmojiSelector from "react-native-emoji-selector";
 import { UserType } from "../UserContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -27,6 +27,22 @@ const ChatMessageScreen = () => {
 
   const [recepientData, setRecepientData] = useState();
   const [messages, setMessages] = useState([]);
+
+  const ScrollViewRef = useRef(null);
+
+  const scrollToBottom = () => {
+    if(ScrollViewRef.current){
+        ScrollViewRef.current.scrollToEnd({animated : false});
+    }
+  }
+
+  useEffect(() => {
+    scrollToBottom();
+  },[])
+
+  const handelConetntSizeChange = () => {
+    scrollToBottom();
+  }
 
   const handleEmojiPress = () => {
     setShowEmojiSelector(!showEmojiSelector);
@@ -114,8 +130,6 @@ const ChatMessageScreen = () => {
         aspect: [4,3],
         quality: 1,
     });
-
-    console.log("Results :" , result);
 
     if(!result.canceled){
         handleSend("image",result.assets[0].uri);
@@ -220,11 +234,10 @@ const ChatMessageScreen = () => {
         ])
     }
   }
-  console.log("SelectedMessages :" ,selectedMessages);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
-      <ScrollView>
+      <ScrollView ref={ScrollViewRef} contentContainerStyle={{flexGrow:1}} onContentSizeChange={handelConetntSizeChange}>
         {messages.map((item, index) => {
           if (item.messageType === "text") {
             const isSelected = selectedMessages.includes(item._id);
