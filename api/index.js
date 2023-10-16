@@ -5,6 +5,7 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/User");
 const Message = require("./models/Message");
+const multer = require("multer")
 
 const app = express();
 const port = 8000;
@@ -207,6 +208,106 @@ app.get("/accepted-friends/:userId",async(req,res)=>{
     }
 })
 
+
+const storage =  multer.diskStorage({
+    destination : function(req, file, cb){
+        cb(null, 'files/');
+    },
+    filename : function(req,file,cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null,uniqueSuffix+'-'+file.originalname);
+    }
+})
+
+const upload = multer({ storage : storage });
+
+//store messages in backend
+app.post("/messages",upload.single('imageFile'),async(req,res)=>{
+    try{
+        const { senderId, recepientId, messageType, messageText} = req.body;
+        const newMessage = new Message({
+            senderId,
+            recepientId,
+            messageType,
+            message : messageText,
+            timeStamp  : new Date(),
+            imageUrl : messageType === "image" ?req.file.path : null,
+        });
+
+        await newMessage.save();
+
+        res.status(200).json({
+            message : "Message sent successfully"
+        })
+    }catch(err){
+        console.log("Error while storing the message ",err);
+        res.status(500).json({
+            error:  "Internal server error",
+        })
+    }
+})
+
+
+//get the userDetails to design the chat room header
+app.get("/user/:userId",async(req,res) => {
+    try{
+        const { userId } = req.params;
+
+        const recepientId = await User.findById(userId);
+
+        res.json(recepientId);
+    }catch(err){
+        console.log("error",err);
+        res.status(500).json({
+            error : "Internal server error",
+        })
+    }
+});
+
+//fetch messages between 2 users in the chat room
+app.get("/messages/:senderId/:recepientId",async(req,res) => {
+    try{
+        const { senderId , recepientId } = req.params;
+        const messages = await Message.find({
+            $or:[
+                {senderId : senderId, recepientId: recepientId},
+                {senderId : recepientId, recepientId:senderId},
+            ]
+        }).populate(
+            "senderId","_id name"
+        )
+
+        res.status(200).json(messages);
+    }catch(err){
+        console.log("Error",err);
+        res.status(500).json({
+            error : "Internal server error",
+        })
+    }
+})
+
+//delete message
+app.post("/deleteMessages",async(req,res) => {
+    try{
+        const {messages} = req.body;
+        if(!Array.isArray(messages) || messages.length ===0){
+            return res.status(400).json({
+                message : "Invalid req body"
+            })
+        }
+
+        await Message.deleteMany({_id : {$in: messages}});
+
+        res.status(200).json({
+            message : "Message deleted successfully"
+        })
+    }catch(err){
+        console.log("Error",err);
+        res.status(500).json({
+            message : "Internal Server Error",
+        })
+    }
+})
 
 mongoose.connect("mongodb+srv://aryanpandey0715:Arti1971@cluster0.1krqlwz.mongodb.net/",{
     useNewUrlParser : true,
